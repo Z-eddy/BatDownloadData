@@ -2,6 +2,7 @@
 #include "downloadlink.h"
 
 #include <QDebug>
+#include <QFile>
 #include <QMessageBox>
 #include <QObject>
 #include <QProcess>
@@ -13,8 +14,9 @@ using std::endl;
 using std::ends;
 using std::string;
 
-DownloadLink::DownloadLink(const QString& link, const QString& fileName)
-    : link_(link), fileName_(fileName) {}
+DownloadLink::DownloadLink(const QString& link, int idx,
+                           const QString& fileName)
+    : link_(link), idx_(idx), fileName_(fileName) {}
 
 void DownloadLink::run() {
   if (link_.isEmpty() || fileName_.isEmpty()) {
@@ -27,11 +29,16 @@ void DownloadLink::run() {
   string order{"ffmpeg -i \""};
   order += link_.toStdString().c_str();
   order += "\" -c copy \"";
-  order += fileName_.toStdString().c_str();
+  order += std::to_string(idx_);
   order += ".mp4\"\n";
 
   system(order.c_str());
   system("exit\n");
 
-  qDebug() << "index:" + fileName_ + ".mp4 :down";
+  auto ok{QFile::rename(QString::number(idx_) + ".mp4", fileName_ + ".mp4")};
+  if (!ok) {
+    qDebug() << fileName_ + "重命名失败";
+  } else {
+    qDebug() << "index:" + fileName_ + ".mp4 :down";
+  }
 }

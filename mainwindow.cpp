@@ -1,6 +1,7 @@
 ﻿#include "mainwindow.h"
 
 #include <QDebug>
+#include <QListWidgetItem>
 #include <QStringList>
 #include <QThreadPool>
 
@@ -15,9 +16,20 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::on_btnAdd_clicked() {
-  auto link{ui->lineEdit->text()};
-  ui->listWidget->addItem(link);
-  ui->lineEdit->clear();
+  //查找是否已有
+  auto fileName{ui->editFileName->text()};
+  auto matchList{ui->listWidget->findItems(fileName, Qt::MatchExactly)};
+  if (matchList.count()) {  //如果找到
+    qDebug() << fileName << ":已存在";
+    return;
+  }
+
+  auto link{ui->editLink->text()};
+  auto item{new QListWidgetItem{fileName}};
+  item->setData(Qt::UserRole, link);
+  ui->listWidget->addItem(item);
+  ui->editLink->clear();
+  ui->editFileName->clear();
 }
 
 void MainWindow::on_btnStart_clicked() {
@@ -25,9 +37,9 @@ void MainWindow::on_btnStart_clicked() {
 
   auto gloTPool{QThreadPool::globalInstance()};
   for (auto i{0}; i != count; ++i) {
-    auto item{ui->listWidget->item(i)};
-    auto link{item->text()};
-    auto downClass{new DownloadLink{link, QString::number(i)}};
+    auto item{ui->listWidget->item(i)};              //获得当前item
+    auto link{item->data(Qt::UserRole).toString()};  //获得link
+    auto downClass{new DownloadLink{link, i, item->text()}};
     gloTPool->start(downClass);
   }
 }
